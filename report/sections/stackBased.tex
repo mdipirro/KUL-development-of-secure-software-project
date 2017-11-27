@@ -1,0 +1,41 @@
+\section{Stack-Based Buffer Overflow}
+\subsection{Casper4}
+\subsubsection{Description and vulnerability}
+Casper4 requires the user to provide a command-line parameter. If this parameter is not provided, it shows an error message and exits with code 1. Otherwise, it calls the \texttt{greetUser} function. \texttt{greetUser} declares a 666-characters long buffer and copies the user-provided parameter in it. Afterwards, it prints \textit{Hello} followed by the buffer's content.
+
+Casper4 has an immediate vulnerability since it uses the unsafe C's \texttt{strcpy} function. It does not check the length of string to be copied to make sure it is not bigger than the buffer's size. This makes a buffer overflow attack possible. One can simply provide a parameter longer than 666 characters and overwrite the buffer (until the return address), potentially injecting code to be executed after the function's return. This is possible since there are no stack canaries, which detect a ''naive`` overflow, and the stack is executable. With a non-executable stack this simple version would not be feasible, and a more advanced exploit would be required (see Section~\ref{sec:dataOnly}).
+
+\subsubsection{Exploit}
+The exploit for Casper4 is simple. As aforementioned, it works as follows:
+\begin{enumerate}
+	\item Inserts in the buffer some no-operation (NOP) bytes (\texttt{\\x90});
+	\item Injects the shell-code corresponding to \texttt{/bin/xh} (which length is 21 bytes);
+	\item Overwrites the portion of the function's stack frame between the end of the buffer and the return address;
+	\item Overwrites the return address making it point to a generic address within the buffer (but prior to the shell-code beginning).
+\end{enumerate}
+% todo Add stack picture to show the addresses and discussion
+
+In order to run the exploit it is enough to run \texttt{make exploit4}.
+
+\subsubsection{Possible countermeasures}
+As aforementioned, this vulnerability is made possible thanks to the absence of stack canaries and non-executable stack. With the former, it is easy to detect an overflow, since the only way to overwrite the return address is overflowing the buffer. With the latter, the program exits immediately due to an attempt to execute code taken from a non-executable area. In both cases, the exploit would not work. 
+
+Besides this two simple countermeasures, there are other, more ''expensive``, possibilities. These are control-flow enforcement and data layout randomization. With the former it is easy to detect that the return address is different from the original, statically computed, one. With the latter, it is more difficult to obtain a working exploit, because the stack's layout is randomized. Nonetheless, since the buffer is 666 characters long and the shell-code only occupies 21 bytes, it would still be possible to obtain a working version.
+
+Of course, even a source-code based countermeasure is effective. The vulnerability is based on the fact that, at \texttt{strcpy} time, lengths are not checked. If the source code checked that the length of the parameter was less or equal than 666 before copying, the vulnerability would disappear. More recent string copying C functions perform this kinds of sanity checks.
+
+\subsubsection{Advanced levels}
+Since the exploit makes use of the NOP byte to reach the shell-code without compromising the stack, I chose Casper40 as an advanced level. It performs an additional check, prior to the copy, to make sure that the parameter does not contain NOP bytes. 
+
+To counterattack this level of defense, I substitute the sequence of NOP with a pair of assembly instructions, \texttt{\\x60\\x61}, corresponding to \texttt{pusha} and \texttt{pulla}. They push and immediately pull a value from the registers (VERIFY) \texttt{exa}, \texttt{exb}, \texttt{exc} and \texttt{exd}. Hence, they have no effect and do not compromise the stack. Please note that it is not necessary to push and pull to all of those registers: working only on one would be enough. Below are the corresponding pairs of instructions:
+\begin{itemize}
+	\item \texttt{eax}: 
+	\item \texttt{ebx}: 
+	\item \texttt{ecx}: 
+	\item \texttt{edx}: 
+\end{itemize}
+
+% todo Add stack picture to show the addresses and discussion
+
+In order to run the exploit it is enough to run \texttt{make exploit40}.
+
