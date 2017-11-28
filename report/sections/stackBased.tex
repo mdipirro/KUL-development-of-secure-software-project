@@ -27,6 +27,7 @@ Of course, even a source-code based countermeasure is effective. The vulnerabili
 \subsubsection{Advanced levels}
 Since the exploit makes use of the NOP byte to reach the shell-code without compromising the stack, I chose Casper40 as an advanced level. It performs an additional check, prior to the copy, to make sure that the parameter does not contain NOP bytes. 
 
+% todo change instructions to target a specific register
 To counterattack this level of defense, I substitute the sequence of NOP with a pair of assembly instructions, \texttt{\\x60\\x61}, corresponding to \texttt{pusha} and \texttt{pulla}. They push and immediately pull a value from the registers (VERIFY) \texttt{exa}, \texttt{exb}, \texttt{exc} and \texttt{exd}. Hence, they have no effect and do not compromise the stack. Please note that it is not necessary to push and pull to all of those registers: working only on one would be enough. Below are the corresponding pairs of instructions:
 \begin{itemize}
 	\item \texttt{eax}: 
@@ -39,3 +40,4 @@ To counterattack this level of defense, I substitute the sequence of NOP with a 
 
 In order to run the exploit it is enough to run \texttt{make exploit40}.
 
+In order to further discuss possible countermeasures, it is worthy to try to exploit Casper41 and Casper42, to prove that ad-hoc countermeasures do not work very well. The code required to exploit both of them is exactly the same as Casper4. They apply ad-hoc countermeasures to prevent specific attacks, but are limited to those. This demonstrates the need of more general defenses, which do not go too deep into details.
