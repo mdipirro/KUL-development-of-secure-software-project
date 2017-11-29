@@ -1,1 +1,47 @@
 \section{Heap-Based Buffer Overflow}
+\subsection{Casper6}
+\subsubsection{Description and vulnerability}
+Casper6, as Casper4, requires the user to enter a parameter. It then copies this parameter in a buffer and calls the function \texttt{greetUser}. Differently from Casper4, Casper6 uses a \texttt{struct}, \texttt{data\_t}, to store both the buffer and a pointer to the function to be invoked. The function pointer is initialized as soon as the main starts, while the buffer is filled in after checking if the parameter is present. 
+
+Casper6 uses the unsafe C function \texttt{strcpy} to copy the parameter in the buffer. Its vulnerability relies there. Without any sanity checks on the parameter's length, a buffer overflow is possible. Furthermore, the function pointer is declared after the buffer, and will be placed upon the latter in the stack. This makes it possible to overflow the buffer targeting the function pointer in order to modify the function to be invoked.
+
+\subsubsection{Exploit}
+The exploit for Casper6 is simple. As aforementioned, it works as follows:
+\begin{enumerate}
+	\item Inserts in the buffer some no-operation (NOP) bytes (\texttt{$\backslash$x90});
+	\item Injects the shell-code corresponding to \texttt{/bin/xh} (which length is 21 bytes);
+	\item Overwrites the function pointer making it point to a generic address within the buffer (but prior to the shell-code beginning).
+\end{enumerate}
+
+The memory situation when the \texttt{main} executes is as follows:
+\begin{itemize}
+	\item Buffer beginning address: \texttt{0x08049800};
+	\item Function pointer address: \texttt{0x08049a9c}.
+\end{itemize}
+
+to exploit the program it is necessary to make \texttt{somedata.fp} point to somewhere within the buffer space, with a previous code injection in it. The number of bytes necessary for the exploit is given by:
+
+\begin{center}
+	\texttt{function\_pointer\_address} - \texttt{buffer\_address} + 4 = \\
+	= \texttt{0x08049a9c} - \texttt{0x08049800} + 4 = 672
+\end{center}
+
+They are filled in as follows:
+\begin{itemize}
+	\item 647 bytes of NOP (\texttt{$\backslash$x90});
+	\item 21 bytes for the shell-code;
+	\item 4 bytes for a random address within the buffer space, \texttt{0x08049860} in the exploit.
+\end{itemize}
+
+In order to run the exploit it is enough to run \texttt{make exploit6}.
+
+\subsubsection{Possible countermeasures}
+
+\subsection{Casper60}
+The selected advanced level is Casper60, since it tries, as well as Casper40, to face the exploit by checking whether the parameter contains any NOP bytes. The countermeasure here is completely bypassed, since it is placed within the \texttt{greetUser} function. Nonetheless, this function is not even invoked, since the function pointer is overwritten before the call. 
+
+For this reason, the exploit for Casper60 is exactly the same used for Casper6. 
+
+A more effective countermeasure, even if far from being unexploitable, would be looking for NOP \textit{before} invoking \texttt{strcpy}. In this case the exploit would require a slight modification, as described in Section~\ref{sec:casper40}.
+
+In order to run the exploit it is enough to run \texttt{make exploit60}.
