@@ -1,5 +1,6 @@
 presentation-introduction-project.pdf
 ignored/*.txt
+report/report.pdf
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
