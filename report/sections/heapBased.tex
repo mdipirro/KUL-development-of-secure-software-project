@@ -1,9 +1,9 @@
 \section{Heap-Based Buffer Overflow}
 \subsection{Casper6}
 \subsubsection{Description and vulnerability}
-Casper6, as Casper4, requires the user to enter a parameter. It then copies this parameter in a buffer and calls the function \texttt{greetUser}. Differently from Casper4, Casper6 uses a \texttt{struct}, \texttt{data\_t}, to store both the buffer and a pointer to the function to be invoked. The function pointer is initialized as soon as the main starts, while the buffer is filled in after checking if the parameter is present. 
+Casper6, as Casper4, requires the user to enter a parameter. It then copies this parameter in a buffer and calls the function \texttt{greetUser}. Differently from Casper4, Casper6 uses a \texttt{struct}, \texttt{data\_t}, to store both the buffer and a pointer to the function to be invoked. The function pointer is initialized as soon as the \texttt{main} starts, while the buffer is filled in after checking if the parameter is present. 
 
-Casper6 uses the unsafe C function \texttt{strcpy} to copy the parameter in the buffer. Its vulnerability relies there. Without any sanity checks on the parameter's length, a buffer overflow is possible. Furthermore, the function pointer is declared after the buffer, and will be placed upon the latter in the stack. This makes it possible to overflow the buffer targeting the function pointer in order to modify the function to be invoked.
+Casper6 uses the unsafe C's function \texttt{strcpy} to copy the parameter in the buffer. Its vulnerability relies there. Without any sanity checks on the parameter length, a buffer overflow is possible. Furthermore, the function pointer is declared after the buffer, and will be placed upon the latter in the stack. This makes it possible to overflow the buffer targeting the function pointer in order to modify the function to be invoked.
 
 \subsubsection{Exploit}
 The exploit for Casper6 is simple. As aforementioned, it works as follows:
@@ -19,7 +19,7 @@ The memory situation when the \texttt{main} executes is as follows:
 	\item Function pointer address: \texttt{0x08049a9c}.
 \end{itemize}
 
-to exploit the program it is necessary to make \texttt{somedata.fp} point to somewhere within the buffer space, with a previous code injection in it. The number of bytes necessary for the exploit is given by:
+To exploit the program it is necessary to make \texttt{somedata.fp} point to somewhere within the buffer space, with a previous code injection in it. The number of bytes necessary for the exploit is given by:
 
 \begin{center}
 	\texttt{function\_pointer\_address} - \texttt{buffer\_address} + 4 = \\
@@ -36,6 +36,13 @@ They are filled in as follows:
 In order to run the exploit it is enough to run \texttt{make exploit6}.
 
 \subsubsection{Possible countermeasures}
+This exploit can be prevented using a non-executable stack. Indeed, note that the variable \texttt{somedata} is stored on the stack and not on the heap (no \texttt{malloc} is done). Stack canaries are useless in this case, since the exploit overwrites a function pointer placed above the buffer instead of a return address.
+
+Another possible countermeasure is control-flow enforcement. In this particular case it is easy to detect a violation, since \texttt{somedata.fp} is assigned the address of \texttt{greetUser} at the beginning of the program and there are no further modifications. The overwriting the function pointer can then be detected and the exploit stopped.
+
+It is also possible to randomize the stack layout, so that the attacker does not know the precise buffer address. Nonetheless, since the exploit works with a random ''jump`` to one of the $666 - 21 = 645$ bytes before the shell-code, an attacker could gain information about the memory area storing the \texttt{struct} and then guess one out of 645 address.
+
+As discussed above, performing a sanity check on the parameter length before copying makes this exploit not work.
 
 \subsection{Casper60}
 The selected advanced level is Casper60, since it tries, as well as Casper40, to face the exploit by checking whether the parameter contains any NOP bytes. The countermeasure here is completely bypassed, since it is placed within the \texttt{greetUser} function. Nonetheless, this function is not even invoked, since the function pointer is overwritten before the call. 
