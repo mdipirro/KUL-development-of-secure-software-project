@@ -40,7 +40,7 @@ This exploit can be prevented using a non-executable stack. Indeed, note that th
 
 Another possible countermeasure is control-flow enforcement. In this particular case it is easy to detect a violation, since \texttt{somedata.fp} is assigned the address of \texttt{greetUser} at the beginning of the program and there are no further modifications. The overwriting the function pointer can then be detected and the exploit stopped.
 
-It is also possible to randomize the stack layout, so that the attacker does not know the precise buffer address. Nonetheless, since the exploit works with a random ''jump`` to one of the $666 - 21 = 645$ bytes before the shell-code, an attacker could gain information about the memory area storing the \texttt{struct} and then guess one out of 645 address.
+It is also possible to randomize the stack layout, so that the attacker does not know the precise buffer address.
 
 As discussed above, performing a sanity check on the parameter length before copying makes this exploit not work.
 
