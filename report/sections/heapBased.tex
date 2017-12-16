@@ -1,9 +1,9 @@
 \section{Heap-Based Buffer Overflow}
 \subsection{Casper6}
 \subsubsection{Description and vulnerability}
-Casper6, as Casper4, requires the user to enter a parameter. It then copies this parameter in a buffer and calls the function \texttt{greetUser}. Differently from Casper4, Casper6 uses a \texttt{struct}, \texttt{data\_t}, to store both the buffer and a pointer to the function to be invoked. The function pointer is initialized as soon as the \texttt{main} starts, while the buffer is filled in after checking if the parameter is present. 
+Casper6, as well as Casper4, requires the user to enter a parameter. It then copies this parameter in a buffer and calls the function \texttt{greetUser}. Differently from Casper4, Casper6 uses a \texttt{struct}, \texttt{data\_t}, to store both the buffer and a pointer to the function to be invoked. The function pointer is initialized as soon as the \texttt{main} starts, while the buffer is filled in after checking if the parameter is present. 
 
-Casper6 uses the unsafe C's function \texttt{strcpy} to copy the parameter in the buffer. Its vulnerability relies there. Without any sanity checks on the parameter length, a buffer overflow is possible. Furthermore, the function pointer is declared after the buffer, and will be placed upon the latter in the stack. This makes it possible to overflow the buffer targeting the function pointer in order to modify the function to be invoked.
+Casper6 uses the unsafe C's function \texttt{strcpy} to copy the parameter in the buffer. Its vulnerability relies there. Without any sanity checks on the parameter's length, a buffer overflow is possible. Furthermore, the function pointer is declared after the buffer, and will be placed upon the latter in the stack. This makes it possible to overflow the buffer targeting the function pointer in order to modify the function to be invoked.
 
 \subsubsection{Exploit}
 The exploit for Casper6 is simple. As aforementioned, it works as follows:

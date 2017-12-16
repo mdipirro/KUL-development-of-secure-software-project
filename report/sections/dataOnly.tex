@@ -21,7 +21,7 @@ As you can see, \texttt{41414141} is highlighted. It corresponds to the string \
 	\item \texttt{isAddress} is at \texttt{0x08049904};
 	\item Nine bytes are above the format string memory.
 \end{itemize}
-The exploit aims to ``jump'' those nine bytes, and to write in a memory location corresponding to \texttt{isAdmin}'s address. Hence, the following command is used to exploit Casper10:\\
+The exploit aims to ``jump'' those nine bytes, and then write in a memory location corresponding to \texttt{isAdmin}'s address. Hence, the following command is used to exploit Casper10:\\
 \texttt{\$(printf ``$\backslash$x40$\backslash$x99$\backslash$x04$\backslash$x08'')\%x\%x\%x\%x\%x\%x\%x\%x\%100x\%n} \\
 The first part prints the address of the global variable the exploit aims to overwrite. Afterwards, nine format parameters (\texttt{\%x}) are provided. They are only needed to step through memory. In the end, \texttt{\%n} requests to write the memory address specified at the beginning of the string. 100 makes \texttt{printf} write a non-zero value. 
 
